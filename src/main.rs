@@ -3,12 +3,15 @@ use ark_ff::PrimeField;
 use ark_mnt4_753::{Fr as MNT4BigFr, MNT4_753};
 use ark_mnt6_753::G1Affine;
 use ark_mnt6_753::{constraints::G1Var, Fr as MNT6BigFr};
+use ark_r1cs_std::alloc::AllocVar;
 
 use ark_crypto_primitives::merkle_tree::{Config, MerkleTree, Path};
 use ark_crypto_primitives::{crh::TwoToOneCRHScheme, snark::SNARK};
 use ark_groth16::Groth16;
 use ark_r1cs_std::fields::fp::FpVar;
 use ark_r1cs_std::prelude::*;
+use ark_r1cs_std::bits::ToBitsGadget;
+use ark_r1cs_std::boolean::Boolean;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef, SynthesisError};
 use ark_serialize::{CanonicalDeserialize, Read};
 
@@ -94,7 +97,7 @@ impl ConstraintSynthesizer<ConstraintF> for SpendCircuit {
             )?;
 
         let secret = FpVar::new_witness(ark_relations::ns!(cs, "secret"), || Ok(self.secret))?;
-        let secret_bits = secret.to_bits_le()?;
+        let secret_bits = ToBitsGadget::<ConstraintF>::to_bits_le(&secret)?;
         Boolean::enforce_smaller_or_equal_than_le(&secret_bits, MNT6BigFr::MODULUS)?;
 
         let nullifier = <LeafHG as CRHSchemeGadget<LeafH, _>>::OutputVar::new_input(
@@ -148,6 +151,12 @@ fn main() {
         <Groth16<MNT4_753> as SNARK<MNT4BigFr>>::VerifyingKey,
     ) = from_file("./proof_keys.bin");
 
+    for (i, leave) in leaves.iter().enumerate() {
+        for (j, item) in leave.iter().enumerate() {
+            println!("leaves[{i}][{j}] = {item}");
+        }
+    }
+
     let leaf_crh_params = poseidon_parameters::poseidon_parameters();
     let i = 2;
     let two_to_one_crh_params = leaf_crh_params.clone();
@@ -188,8 +197,8 @@ fn main() {
 
     /* Enter your solution here */
 
-    let nullifier_hack = MNT4BigFr::from(0);
-    let secret_hack = MNT4BigFr::from(0);
+    let secret_hack =  MNT4BigFr::from(MNT6BigFr::MODULUS) - leaked_secret;
+    let nullifier_hack = <LeafH as CRHScheme>::evaluate(&leaf_crh_params, vec![secret_hack]).unwrap();
 
     /* End of solution */
 

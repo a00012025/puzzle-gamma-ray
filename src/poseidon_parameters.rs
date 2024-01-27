@@ -10,7 +10,7 @@ pub fn poseidon_parameters() -> PoseidonConfig<F> {
     let partial_rounds = 29;
     let alpha = 17;
 
-    let ark = vec![
+    let ark: Vec<Vec<F>> = vec![
         vec![
             F::from_str(
                 "9478896780421655835758496955063136571251874317427585180076394551808670301829",
@@ -646,7 +646,7 @@ pub fn poseidon_parameters() -> PoseidonConfig<F> {
     // [[1, 0, 1],
     //  [1, 1, 0],
     //  [0, 1, 1]]
-    let mds = vec![
+    let mds: Vec<Vec<F>> = vec![
         vec![F::one(), F::zero(), F::one()],
         vec![F::one(), F::one(), F::zero()],
         vec![F::zero(), F::one(), F::one()],
